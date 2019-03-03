@@ -22,36 +22,61 @@ if __name__ == "__main__":
     
     for month_data in month_datas:
         # extract features
-        print(month_data.shape)
+        month_data = month_data[4:18,:]
+        ind_pm25 = 5
+        month_data = np.concatenate((month_data,month_data[np.newaxis:8]**2, month_data[np.newaxis:9]**2), axis=0)
         #month_data[0:4,:] = np.zeros(shape=month_data[0:4,:].shape)
         #month_data[10:17,:] = np.zeros(shape=month_data[10:17,:].shape)
         train_datas = month_data.T.reshape(-1)
-        num_feature = 18
-        for i in range(0, len(train_datas) - num_feature * 10, num_feature):
-            x = [1.0] + train_datas[i: i+num_feature*9].tolist()
-            y = train_datas[i + 18*9 + 9]
+        dim_day = month_data.shape[0]
+        for i in range(0, len(train_datas) - dim_day * 10, dim_day):
+            x = train_datas[i: i+dim_day*9].tolist()
+            y = train_datas[i + dim_day*9 + ind_pm25]
             if y > 0:
                 train_x.append(x)
-                train_y.append(train_datas[i + 18*9 + 9])
+                train_y.append(train_datas[i + dim_day*9 + ind_pm25])
+    
     train_x = np.array(train_x)
     train_y = np.array(train_y).T
-
+    
+    dim = len(train_x[0])
+    num_data = len(train_x)
+    
+    verify_x = np.copy(train_x)
+    verify_x = np.concatenate((np.ones(shape=(num_data,1)), train_x), axis=1)
+    # normalization
+    
+    mean = np.mean(train_x,axis=0)
+    std = np.std(train_x, axis=0)
+    
+    for i in range(dim):
+        train_x[:,i] = (train_x[:,i] - mean[i] )/(1 if std[i] == 0 else std[i])
+    
+    # add bias
+    dim += 1
+    train_x = np.concatenate((np.ones(shape=(num_data,1)), train_x), axis=1)
+    
     # training
-    w = np.array([-2.0] * len(train_x[0])).T#np.zeros(len(train_x[0]) ).T
+    w = np.array([-2.0] * dim).T#np.zeros(len(train_x[0]) ).T
     b = 0
-    lr = 100.0
-    iteration = 100000
-    sum_grad = np.zeros(len(train_x[0]) ).T
-    epsilon = np.array([1e-8] * len(train_x[0])).T
+    lr = 200.0
+    iteration = 10000
+    sum_grad = np.zeros(dim).T
+    epsilon = np.array([1e-8] * dim).T
     for i in range(iteration):
-        expect_y = train_x.dot(w)
-        if i % 100 == 0:
-            loss = np.sqrt( np.sum((train_y - expect_y)**2) / len(train_x) )
+        if i % 500 == 0:
+            loss = np.sqrt( np.sum((train_y - train_x.dot(w))**2) / num_data )
             print('loss:', loss)
-        gradient = np.zeros(len(train_x[0]) ).T
+        gradient = np.zeros(dim).T
         gradient = -2.0 * train_x.T.dot(train_y - train_x.dot(w))
         sum_grad += gradient**2
         w -= lr * gradient / (np.sqrt(sum_grad + epsilon))
-    print('final loss:', np.sqrt( np.sum((train_y - expect_y)**2) / len(train_x) ))
-    np.savetxt('model.npy', w, delimiter=',')
+    
+    # put std, mean back
+    
+    w[1:] = w[1:] / std
+    w[0] -= mean.dot(w[1:])
+    
+    print('final loss:', np.sqrt( np.sum((train_y - verify_x.dot(w))**2) / num_data ))
+    np.save('weight.npy', w)
     

@@ -52,4 +52,4 @@ if __name__ == "__main__":
         sum_grad += gradient**2
         w -= lr * gradient / (np.sqrt(sum_grad + epsilon))
     print('final loss:', np.sqrt( np.sum((train_y - expect_y)**2) / len(train_x) ))
-    np.savetxt('model.npy', w, delimiter=',')
+    np.save('model.npy', w)
