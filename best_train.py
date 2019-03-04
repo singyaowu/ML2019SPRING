@@ -17,33 +17,52 @@ if __name__ == "__main__":
         month_datas.append( np.array(sample) )
     month_datas = np.array(month_datas)
 
-    # preprocessing
-    train_x, train_y = [], []
+
+    raw_x = np.empty(shape=(12*471 , 18*9), dtype=float)
+    raw_y = np.empty(shape=(12*471 , 1), dtype=float)
     
-    for month_data in month_datas:
-        # extract features
-        month_data = month_data[4:18,:]
-        ind_pm25 = 5
-        month_data = np.concatenate((month_data,month_data[np.newaxis:8]**2, month_data[np.newaxis:9]**2), axis=0)
-        #month_data[0:4,:] = np.zeros(shape=month_data[0:4,:].shape)
-        #month_data[10:17,:] = np.zeros(shape=month_data[10:17,:].shape)
-        train_datas = month_data.T.reshape(-1)
+    for month, month_data in enumerate(month_datas):
+        for hour in range(0, 20*24 - 9):
+            raw_x[month * 471 + hour, :] = month_data[:, hour:hour+9].reshape(1, -1)
+            raw_y[month*471 + hour, 0] = month_data[9, hour+9]
         dim_day = month_data.shape[0]
-        for i in range(0, len(train_datas) - dim_day * 10, dim_day):
-            x = train_datas[i: i+dim_day*9].tolist()
-            y = train_datas[i + dim_day*9 + ind_pm25]
-            if y > 0:
-                train_x.append(x)
-                train_y.append(train_datas[i + dim_day*9 + ind_pm25])
     
+    # preprocessing
+    neg_y = []
+    for i in range(raw_y.shape[0]):
+        if raw_y[i][0] < 0: 
+            neg_y.append(i)
+    raw_x = np.delete(raw_x, neg_y, axis=0)
+    raw_y = np.delete(raw_y, neg_y, axis=0)
+    del neg_y
+    
+    train_x, train_y = [], []
+
+    for x, y in zip(raw_x, raw_y):
+   
+        extract_x = x.copy().reshape(18,9)
+        
+        for i in range(9):
+            if extract_x[9,i] < 0:
+                break
+        else:
+            # pick NO2(5), 03(7),PM10(8), PM2.5(9), SO2(12)
+            #extract_x = x.copy().reshape(18,9)[0:18, :]
+            #extract_x = np.concatenate((extract_x,extract_x[np.newaxis:8]**2, extract_x[np.newaxis:9]**2), axis=0)
+            #extract_x[0:2, :] = np.zeros(shape=extract_x[0:2, :].shape)
+            #extract_x[3:5, :] = np.zeros(shape=extract_x[3:5, :].shape)
+            #extract_x[10:14, :] = np.zeros(shape=extract_x[10:14, :].shape)
+            #extract_x[15:, :] = np.zeros(shape=extract_x[15:, :].shape)
+            
+            train_x.append(extract_x.reshape(-1))
+            train_y.append(y)
+
     train_x = np.array(train_x)
-    train_y = np.array(train_y).T
-    
+    train_y = np.array(train_y)
+
     dim = len(train_x[0])
     num_data = len(train_x)
     
-    verify_x = np.copy(train_x)
-    verify_x = np.concatenate((np.ones(shape=(num_data,1)), train_x), axis=1)
     # normalization
     
     mean = np.mean(train_x,axis=0)
@@ -57,12 +76,10 @@ if __name__ == "__main__":
     train_x = np.concatenate((np.ones(shape=(num_data,1)), train_x), axis=1)
     
     # training
-    w = np.array([-2.0] * dim).T#np.zeros(len(train_x[0]) ).T
-    b = 0
+    w = np.zeros(shape= (dim, 1))
     lr = 200.0
     iteration = 10000
-    sum_grad = np.zeros(dim).T
-    epsilon = np.array([1e-8] * dim).T
+    sum_grad = np.zeros(shape=(dim,1))
     for i in range(iteration):
         if i % 500 == 0:
             loss = np.sqrt( np.sum((train_y - train_x.dot(w))**2) / num_data )
@@ -70,13 +87,19 @@ if __name__ == "__main__":
         gradient = np.zeros(dim).T
         gradient = -2.0 * train_x.T.dot(train_y - train_x.dot(w))
         sum_grad += gradient**2
-        w -= lr * gradient / (np.sqrt(sum_grad + epsilon))
+        w -= lr * gradient / (np.sqrt(sum_grad + 1e-8))
     
     # put std, mean back
     
-    w[1:] = w[1:] / std
-    w[0] -= mean.dot(w[1:])
+    #w[1:] = w[1:] / std
+    #w[0] -= mean.dot(w[1:])
     
-    print('final loss:', np.sqrt( np.sum((train_y - verify_x.dot(w))**2) / num_data ))
+    for i in range(raw_x.shape[1]):
+        raw_x[:,i] = (raw_x[:,i] - mean[i] )/(1 if std[i] == 0 else std[i])
+    raw_x = np.concatenate((np.ones(shape=(raw_x.shape[0],1)), raw_x), axis=1)
+    #print('raw loss:', np.sqrt( np.sum((raw_y - raw_x.dot(w))**2) / raw_x.shape[0] ))
+    print('train_loss',np.sqrt( np.sum((train_y - train_x.dot(w))**2) / num_data ))
     np.save('weight.npy', w)
+    np.save('mean.npy', mean)
+    np.save('std.npy', std)
     

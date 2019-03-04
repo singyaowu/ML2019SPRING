@@ -32,7 +32,7 @@ if __name__ == "__main__":
     train_x = np.array(train_x)
     train_y = np.array(train_y).T
     print(train_x.shape)
-    
+    print(train_x.shape, train_y.shape)
     
     # training
     w = np.array([-2.0] * len(train_x[0])).T#np.zeros(len(train_x[0]) ).T
@@ -40,10 +40,11 @@ if __name__ == "__main__":
     lr = 100.0
     iteration = 100000
     sum_grad = np.zeros(len(train_x[0]) ).T
+    print(sum_grad.shape)
     epsilon = np.array([1e-8] * len(train_x[0])).T
     for i in range(iteration):
         expect_y = train_x.dot(w)
-
+        #print('expect', expect_y.shape)
         if i % 1000 == 0:
             loss = np.sqrt( np.sum((train_y - expect_y)**2) / len(train_x) )
             print('loss:', loss)
