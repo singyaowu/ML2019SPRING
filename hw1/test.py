@@ -6,13 +6,11 @@ if __name__ == "__main__":
     mean = np.load('mean.npy')
     std = np.load('std.npy')
 
-    print('testing file:', sys.argv[1])
     test_raw_data = np.genfromtxt(sys.argv[1], delimiter=',')
     test_datas = test_raw_data[:,2:]
     test_datas[np.isnan(test_datas)] = 0.0
 
     num_data = test_datas.shape[0] // 18
-    print('Datas with length:', num_data)
     test_x = np.empty( shape=(num_data, 18 * 9),  dtype=float)
     for i in range(num_data):
         # feature extraction
@@ -32,11 +30,8 @@ if __name__ == "__main__":
     expect_y = test_x.dot(w)
 
     # write file
-    print('write to file:', sys.argv[2])
     output_file = open(sys.argv[2], 'w')    
     output_file.write("id,value\n")
     
     for i in range(num_data):
         output_file.write('id_' + str(i) + ',' + str(expect_y[i][0]) + '\n')
-    
-    print("output file is built!!")
