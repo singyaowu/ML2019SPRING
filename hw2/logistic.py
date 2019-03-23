@@ -1,12 +1,7 @@
 import numpy as np
 import sys
 sigmoid = lambda s: (1.0 / (1 + np.exp(-s)))
-# record: train/valid
-# all one-degree feature: 0.852989 / 0.854317651
-#all one-degree occupation **2 +  feature: 0.853726 / 0.85051
-# one-degree delete marital_status +  feature: 0.853726 / 0.85051
-# one-degree delete '?_workclass', '?_occupation', '?_native_country\n','fnlwgt', ' Other-relative', ' Other-service' , ' Other' +  feature: 0.852416 / 0.850632
-#bash ./hw2_logistic.sh train.csv test.csv X_train Y_train X_test prediction.csv
+
 if __name__ == "__main__":
     # read training data
     raw_x = np.genfromtxt(sys.argv[1], delimiter=',', dtype=np.float64)
@@ -26,10 +21,9 @@ if __name__ == "__main__":
     dim += 1
     
     # training
-    
     w = 0.1 * np.ones(shape= (dim, 1), dtype=np.float64)
     lr = 0.1
-    iteration = 10000
+    iteration = 3000
     sum_grad = np.zeros(shape=(dim,1),dtype=np.float64)
     for i in range(iteration):
         f_x = sigmoid(x.dot(w))

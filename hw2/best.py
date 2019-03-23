@@ -1,12 +1,7 @@
 import numpy as np
 import sys
 sigmoid = lambda s: (1.0 / (1 + np.exp(-s)))
-# record: train/valid
-# all one-degree feature: 0.852989 / 0.854317651
-# all one-degree occupation **2 +  feature: 0.853726 / 0.85051
-# one-degree delete marital_status +  feature: 0.853726 / 0.85051
-# one-degree delete '?_workclass', '?_occupation', '?_native_country\n','fnlwgt', ' Other-relative', ' Other-service' , ' Other' +  feature: 0.852416 / 0.850632
-# all one numeric second: 0.86 / 0.851
+
 #bash ./hw2_logistic.sh train.csv test.csv X_train Y_train X_test prediction.csv
 if __name__ == "__main__":
     # read training data
@@ -43,18 +38,20 @@ if __name__ == "__main__":
     #                 Honduras, Hong, Hungary, India, Iran, Ireland, Italy, Jamaica, Japan, Laos, Mexico, Nicaragua, Outlying-US(Guam-USVI-etc),
     #                 Peru, Philippines, Poland, Portugal, Puerto-Rico, Scotland, South, Taiwan, Thailand, Trinadad&Tobago, United-States, Vietnam,
     #                 Yugoslavia,?_native_country
-    #print(pick_dict)
-    #del_feature = ['age','?_workclass', '?_occupation', '?_native_country\n','fnlwgt', ' Other-relative', ' Other-service' , ' Other'] #+ \
-        #' Amer-Indian-Eskimo, Asian-Pac-Islander, Black, Other, White, Cambodia, Canada, China, Columbia, Cuba, Dominican-Republic, Ecuador, El-Salvador, England, France, Germany, Greece, Guatemala, Haiti, Holand-Netherlands, Honduras, Hong, Hungary, India, Iran, Ireland, Italy, Jamaica, Japan, Laos, Mexico, Nicaragua, Outlying-US(Guam-USVI-etc), Peru, Philippines, Poland, Portugal, Puerto-Rico, Scotland, South, Taiwan, Thailand, Trinadad&Tobago, United-States, Vietnam, Yugoslavia'.split(',') +\
-            #[]#' Husband, Not-in-family, Own-child, Unmarried, Wife'.split(',')
-    #del_ids = [ pick_dict[id_name] for id_name in del_feature]
-    second_id = ['age','sex','capital_gain','capital_loss','hours_per_week']
+    
+    second_id = ['age','fnlwgt','sex', 'capital_gain','capital_loss','hours_per_week']
+    third_id = ['age','sex', 'capital_gain','capital_loss','hours_per_week']
+    
     selected = [pick_dict[id_name] for id_name in second_id]
     second_feature = [ ( x[:, id:id+1 ] ) for id in selected]
     second_feature = np.concatenate( tuple(second_feature), axis=1)
+
+    selected2 = [pick_dict[id_name] for id_name in third_id]
+    third_feature = [ ( x[:, id:id+1 ] ) for id in selected2]
+    third_feature = np.concatenate( tuple(third_feature), axis=1)
     print(second_feature.shape, x.shape)
     #x = np.delete(x, del_ids, axis=1)
-    x = np.concatenate((x, second_feature**2), axis=1)
+    x = np.concatenate((x, second_feature**2, third_feature**3), axis=1)
     num_data, dim = x.shape
     #normalization
     mean = np.mean(x,axis=0)
@@ -63,11 +60,6 @@ if __name__ == "__main__":
         x[:,i] = (x[:,i] - mean[i] )/(1 if std[i] == 0 else std[i])
     x = np.concatenate((np.ones(shape=(num_data,1)), x), axis=1).astype(np.float64)
     dim += 1
-    # validation
-    #x = np.concatenate((y, x), axis=1)
-    #np.random.shuffle(x)
-    #y = x[:,0:1]
-    #x = x[:,1:]
     
     cut = int(4/4 * num_data)
     val_x = x[cut:, :]
@@ -81,7 +73,7 @@ if __name__ == "__main__":
     w = 0.1 * np.ones(shape= (dim, 1), dtype=np.float64)
     lr = 0.1
     ld = 0.1
-    iteration = 10000
+    iteration = 3000
     sum_grad = np.zeros(shape=(dim,1),dtype=np.float64)
     for i in range(iteration):
         f_x = sigmoid(x.dot(w))
@@ -104,7 +96,8 @@ if __name__ == "__main__":
         print('validation:', val_accuracy)
 
 
-    np.save('weight.npy', w)
-    np.save('mean.npy', mean)
-    np.save('std.npy', std)
+    np.save('weight_best.npy', w)
+    np.save('mean_best.npy', mean)
+    np.save('std_best.npy', std)
     np.save('selected.npy', np.array(selected))
+    np.save('selected2.npy', np.array(selected2))

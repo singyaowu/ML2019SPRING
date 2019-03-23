@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 sigmoid = lambda s: (1.0 / (1 + np.exp(-s)))
-
+# python3 test.py Xtest predict.csv
 if __name__ == "__main__":  
     w = np.load('weight.npy')
     mean = np.load('mean.npy')
@@ -12,7 +12,6 @@ if __name__ == "__main__":
 
     num_data, dim = x.shape
     
-    print('read input finish')
     for i in range(dim):
         x[:,i] = (x[:,i] - mean[i] )/(1 if std[i] == 0 else std[i])
     x = np.concatenate((np.ones(shape=(num_data,1)), x), axis=1).astype(np.float64)

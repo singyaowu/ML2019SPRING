@@ -2,16 +2,20 @@ import numpy as np
 import sys
 sigmoid = lambda s: (1.0 / (1 + np.exp(-s)))
 
-if __name__ == "__main__":  
-    w = np.load('weight.npy')
-    mean = np.load('mean.npy')
-    std = np.load('std.npy')
+if __name__ == "__main__":
+
+    w = np.load('weight_best.npy')
+    mean = np.load('mean_best.npy')
+    std = np.load('std_best.npy')
     selected = np.load('selected.npy').tolist()
+    selected2 = np.load('selected2.npy').tolist()
     raw_x = np.genfromtxt(sys.argv[1], delimiter=',', dtype=np.float64)
     x = raw_x[1:,:]
     second_feature = [ ( x[:, id:id+1 ] ) for id in selected]
     second_feature = np.concatenate( tuple(second_feature), axis=1)
-    x = np.concatenate((x, second_feature**2), axis=1)
+    third_feature = [ ( x[:, id:id+1 ] ) for id in selected2]
+    third_feature = np.concatenate( tuple(third_feature), axis=1)
+    x = np.concatenate((x, second_feature**2, third_feature**3), axis=1)
     
     num_data, dim = x.shape
     
