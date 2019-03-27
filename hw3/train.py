@@ -7,7 +7,7 @@ from torch.optim import Adam
 import torch.utils.data as Data
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 def parse_csv(label_path):
     raw_data_fp = open(label_path,'r')
     lines = raw_data_fp.readlines()[1:]
@@ -24,11 +24,12 @@ def parse_csv(label_path):
     raw_imgs = raw_imgs.reshape((num_data,1,48,48))
     
     #raw_y = raw_y.reshape((num_data,1))
-    return torch.tensor(raw_imgs).type(torch.FloatTensor), torch.tensor(raw_y).type(torch.LongTensor)
+    return raw_imgs, raw_y
+    #torch.tensor(raw_imgs).type(torch.FloatTensor), torch.tensor(raw_y).type(torch.LongTensor)
 
 # parameters
 
-EPOCH = 1000
+EPOCH = 500
 BATCH_SIZE = 256
 LEARNING_RATE = 0.001
 
@@ -70,9 +71,9 @@ class MyCNN(nn.Module):
         self.conv5 = nn
         self.fc = nn.Sequential(
             nn.Linear(512 * 3 * 3, 512),
-            nn.BatchNorm1d(512),
+            nn.BatchNorm1d(512 * 3 * 3),
             nn.Dropout(0.5),
-            nn.Linear(512, 7),
+            nn.Linear(512 * 3 * 3, 7),
         )
         self.out = nn.Softmax(dim=1)
     def forward(self, x):
@@ -84,21 +85,32 @@ class MyCNN(nn.Module):
         x = self.fc(x)
         output = self.out(x)
         return output
-
+def augment_data(imgs, y):
+    new_imgs = imgs.copy()
+    new_y = y.copy()
+    num_data = new_imgs.shape[0]
+    for i in range(num_data):
+        new_imgs[i,0,:,:] = new_imgs[i,0,:,::-1]
+    return new_imgs, new_y
 
 if __name__ == "__main__":
     raw_imgs, raw_y = parse_csv(sys.argv[1])
-    
-    print('raw_imgs:', raw_imgs.size())
-    print('raw_y:', raw_y.size())
+    aug_imgs, aug_y = augment_data(raw_imgs, raw_y)
+    train_imgs = np.concatenate((raw_imgs, aug_imgs), axis=0)
+    train_y = np.concatenate((raw_y, aug_y), axis=0)
+    print(train_imgs.shape, train_y.shape)
+    train_imgs = torch.tensor(train_imgs).type(torch.FloatTensor)
+    train_y = torch.tensor(train_y).type(torch.LongTensor)
+    #print('raw_imgs:', raw_imgs.size())
+    #print('raw_y:', raw_y.size())
     num_valid_data = 0#raw_imgs.size()[0] // 4
-
-    val_imgs = raw_imgs[:num_valid_data,:,:]
-    val_y = raw_y[:num_valid_data]
-    training_set = Data.TensorDataset(raw_imgs[num_valid_data:,:,:], raw_y[num_valid_data:])# MyDataset(sys.argv[1])
+    
+    val_imgs = train_imgs[:num_valid_data,:,:]
+    val_y = train_y[:num_valid_data]
+    training_set = Data.TensorDataset(train_imgs[num_valid_data:,:,:], train_y[num_valid_data:])
     train_loader = DataLoader(
         training_set, batch_size=BATCH_SIZE, shuffle=True)
-    
+    valid_set = Data.TensorDataset(train_imgs[num_valid_data:,:,:], train_y[num_valid_data:])
     # train
     device = torch.device('cuda')
     model = MyCNN()
@@ -153,6 +165,7 @@ if __name__ == "__main__":
     # validation
     # test
     test_imgs, ids = parse_csv(sys.argv[2])
+    test_imgs = torch.tensor(test_imgs).type(torch.FloatTensor)
     num_test_data = test_imgs.size()[0]
     print('num_test_data=', num_test_data)
     #test_imgs = test_imgs.to(device, dtype=torch.float)
@@ -164,3 +177,4 @@ if __name__ == "__main__":
     #print(predict_y)
     for i in range(num_test_data):
         output_file.write( str(i) + ',' + str(int(predict_y[i])) + '\n')
+    print('finish')
