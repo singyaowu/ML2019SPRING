@@ -70,10 +70,10 @@ class MyCNN(nn.Module):
         )
         self.conv5 = nn
         self.fc = nn.Sequential(
-            nn.Linear(512 * 3 * 3, 512),
-            nn.BatchNorm1d(512 * 3 * 3),
-            nn.Dropout(0.5),
             nn.Linear(512 * 3 * 3, 7),
+            #nn.BatchNorm1d(512 * 3 * 3),
+            nn.Dropout(0.5),
+            #nn.Linear(512 * 3 * 3, 7),
         )
         self.out = nn.Softmax(dim=1)
     def forward(self, x):
