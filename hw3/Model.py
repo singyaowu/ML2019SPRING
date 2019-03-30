@@ -72,17 +72,18 @@ class MyCNN(nn.Module):
             nn.BatchNorm2d(512),
             nn.MaxPool2d(kernel_size=2),                 # output shape(32, 4, 4)
             nn.BatchNorm2d(512),
-            nn.Dropout(0.4),
+            nn.Dropout(0.45),
 
             nn.Conv2d(in_channels=512,out_channels=512,   # output shape(32, 8, 8)
                 kernel_size=3,stride=1,padding=1,),
             nn.ReLU(),
             nn.BatchNorm2d(512),
-            nn.Dropout(0.4),
+            nn.Dropout(0.45),
             nn.Conv2d(in_channels=512,out_channels=512,   # output shape(32, 8, 8)
                 kernel_size=3,stride=1,padding=1,),
             nn.ReLU(),
             nn.BatchNorm2d(512),
+            nn.Dropout(0.45),
             nn.Conv2d(in_channels=512,out_channels=512,   # output shape(32, 8, 8)
                 kernel_size=3,stride=1,padding=1,),
             nn.ReLU(),
