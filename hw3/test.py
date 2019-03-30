@@ -8,59 +8,8 @@ import torch.utils.data as Data
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
-
-class MyCNN(nn.Module):
-    def __init__(self):
-        super(MyCNN, self).__init__()
-        self.conv1 = nn.Sequential(                     # input shape(1, 48, 48)
-            nn.Conv2d(in_channels=1,out_channels=32,
-                kernel_size=5,stride=1,padding=2,),     # output shape(16, 44, 44)
-            nn.LeakyReLU(0.05),
-            nn.BatchNorm2d(32),
-            nn.MaxPool2d(kernel_size=2),                 # output shape(16, 22, 22)
-            nn.Dropout(0.3)
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(in_channels=32,out_channels=64,   # output shape(32, 18, 18)
-                kernel_size=3,stride=1,padding=1,),
-            nn.LeakyReLU(0.05),
-            nn.BatchNorm2d(64),
-            nn.MaxPool2d(kernel_size=2),                 # output shape(32, 10, 10)
-            nn.Dropout(0.3)
-        )
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(in_channels=64,out_channels=128,   # output shape(32, 8, 8)
-                kernel_size=3,stride=1,padding=1,),
-            nn.LeakyReLU(0.05),
-            nn.BatchNorm2d(128),
-            nn.MaxPool2d(kernel_size=2),                 # output shape(32, 4, 4)
-            nn.Dropout(0.4)
-        )
-        self.conv4 = nn.Sequential(
-            nn.Conv2d(in_channels=128,out_channels=512,   # output shape(32, 8, 8)
-                kernel_size=3,stride=1,padding=1,),
-            nn.LeakyReLU(0.05),
-            nn.BatchNorm2d(512),
-            nn.MaxPool2d(kernel_size=2),                 # output shape(32, 4, 4)
-            nn.Dropout(0.4)
-        )
-        self.conv5 = nn
-        self.fc = nn.Sequential(
-            nn.Linear(512 * 3 * 3, 512),
-            nn.BatchNorm1d(512),
-            nn.Dropout(0.5),
-            nn.Linear(512, 7),
-        )
-        self.out = nn.Softmax(dim=1)
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        x = x.view(x.size(0),-1)
-        x = self.fc(x)
-        output = self.out(x)
-        return output
+from torchvision.transforms import *
+import Model
 
 def parse_csv(label_path):
     raw_data_fp = open(label_path,'r')
@@ -81,18 +30,34 @@ def parse_csv(label_path):
     return raw_imgs, raw_y
 
 if __name__ == "__main__":
-    model = MyCNN()
+    model = Model.MyCNN()
     model.load_state_dict(torch.load('model_params.pkl'))
-    test_imgs, ids = parse_csv(sys.argv[1])
+    device = torch.device('cuda')
+    model.to(device)
+    model.eval()
+    # test
+    output_file = open(sys.argv[3], 'w')
+    output_file.write("id,label\n")
+    
+    test_imgs, ids = parse_csv(sys.argv[2])
     test_imgs = torch.tensor(test_imgs).type(torch.FloatTensor)
     num_test_data = test_imgs.size()[0]
     print('num_test_data=', num_test_data)
-    #test_imgs = test_imgs.to(device, dtype=torch.float)
-    predict = model(test_imgs)
-    predict_y = torch.max(predict, 1)[1]
-    output_file = open(sys.argv[2], 'w')
-    output_file.write("id,label\n")
-    #print(predict_y.size())
-    #print(predict_y)
+    test_set = Data.TensorDataset(test_imgs)
+    test_loader = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False)
+    predict_y = None
+    for step, (img) in enumerate(test_loader):
+        img_cuda = img[0].to(device, dtype=torch.float)
+        output = model(img_cuda)
+        predict = torch.max(output, 1)[1]
+        if predict_y is None:
+            predict_y = predict
+        else:
+            predict_y = torch.cat((predict_y, predict), 0)
+  
+
+    print(predict_y.size())
+
     for i in range(num_test_data):
         output_file.write( str(i) + ',' + str(int(predict_y[i])) + '\n')
+    print('finish')
