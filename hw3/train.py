@@ -75,8 +75,8 @@ class TrainDataset(Dataset):
         self.y = torch.tensor(y).type(torch.LongTensor)
         self.transform = tf.Compose([
             tf.ToPILImage(),
-            tf.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
-            tf.RandomRotation(20),            
+            tf.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+            tf.RandomRotation(30),            
             tf.RandomResizedCrop(48,scale=(0.8,1)),
             tf.ToTensor()
         ])
@@ -89,6 +89,12 @@ class TrainDataset(Dataset):
 
 if __name__ == "__main__":
     raw_imgs, raw_y = parse_csv(sys.argv[1])
+    imgs_shape = raw_imgs.shape
+    y_shape = raw_y.shape
+    c =  np.concatenate((raw_imgs.reshape(len(raw_imgs), -1), raw_y.reshape(len(raw_y),1)), axis=1)
+    np.random.shuffle(c)
+    raw_imgs = (c[:, :-1]).reshape(imgs_shape)
+    raw_y = (c[:, -1]).reshape(y_shape)
     
     num_val_data = raw_imgs.shape[0] // 6
     val_imgs = raw_imgs[:num_val_data,:,:]

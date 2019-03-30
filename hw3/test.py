@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 from torchvision.transforms import *
 import Model
-
+BATCH_SIZE = 256
 def parse_csv(label_path):
     raw_data_fp = open(label_path,'r')
     lines = raw_data_fp.readlines()[1:]
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     model.to(device)
     model.eval()
     # test
-    output_file = open(sys.argv[3], 'w')
+    output_file = open(sys.argv[1], 'w')
     output_file.write("id,label\n")
     
     test_imgs, ids = parse_csv(sys.argv[2])
