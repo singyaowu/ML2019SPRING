@@ -12,8 +12,8 @@ from torchvision import transforms as tf
 import Model
    
 # parameters
-EPOCH = 50
-BATCH_SIZE = 108
+EPOCH = 75
+BATCH_SIZE = 256
 LEARNING_RATE = 0.001
 
 def flipped_data(imgs, y):
@@ -34,11 +34,35 @@ def parse_csv(label_path):
     for i, line in enumerate(lines):
         nums = line.split(',')
         raw_y[i] = int(nums[0])
-        raw_imgs[i,:,:] = np.array([float(num) for num in nums[1].split(' ')]) /255
+        raw_imgs[i,:,:] = np.array([float(num) for num in nums[1].split(' ')]) /255.0
     
     raw_imgs = raw_imgs.reshape((num_data,1,48,48))
     
     return raw_imgs, raw_y
+def augment_data(r_imgs, r_y):
+    f_imgs, f_y = flipped_data(r_imgs, r_y)
+    imgs = np.concatenate((r_imgs, f_imgs), axis=0)
+    imgs = torch.tensor(imgs).type(torch.FloatTensor)
+    y = np.concatenate((r_y, f_y), axis=0)
+    y = torch.tensor(y).type(torch.LongTensor)
+    transform = tf.Compose([
+            tf.ToPILImage(),
+            tf.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),            
+            tf.RandomRotation(18),
+            tf.RandomResizedCrop(48,scale=(0.85,1)),
+            tf.ToTensor()
+        ])
+    aug_imgs1 = imgs.clone()
+    for i in range(imgs.size()[0]):
+        aug_imgs1[i, :, :, :] = transform(aug_imgs1[i])
+    aug_imgs2 = imgs.clone()
+    for i in range(imgs.size()[0]):
+        aug_imgs2[i, :, :, :] = transform(aug_imgs2[i])
+    imgs = torch.cat((imgs,aug_imgs1, aug_imgs2), 0)
+    y = torch.cat((y, y, y), 0)
+    print(imgs.size(), y.size())
+    return imgs, y
+'''
 class TrainDataset(Dataset):
     def __init__(self, raw_imgs, raw_y):
         aug_imgs, aug_y = flipped_data(raw_imgs, raw_y)
@@ -48,7 +72,6 @@ class TrainDataset(Dataset):
         self.y = raw_y#torch.tensor(y).type(torch.LongTensor)
         self.transform = tf.Compose([
             tf.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.25),
-            tf.RandomHorizontalFlip(),
             tf.RandomRotation(5),            
             tf.RandomResizedCrop(48,scale=(0.95,1)),
             tf.ToTensor()
@@ -61,22 +84,46 @@ class TrainDataset(Dataset):
         PIL_img = tf.ToPILImage()(self.imgs[idx])
         #return self.imgs[idx], self.y[idx]
         return self.transform(PIL_img).type(torch.FloatTensor), self.y[idx]
-
+'''
 if __name__ == "__main__":
     raw_imgs, raw_y = parse_csv(sys.argv[1])
     
-    num_val_data = 0#raw_imgs.size()[0] // 4
+    num_val_data = raw_imgs.shape[0] // 20
     val_imgs = raw_imgs[:num_val_data,:,:]
     val_y = raw_y[:num_val_data]
 
-    print(raw_imgs.shape)
-    training_set = TrainDataset(raw_imgs[num_val_data:,:,:,:], raw_y[num_val_data:])#Data.TensorDataset(train_imgs[num_val_data:,:,:], train_y[num_val_data:])
+    train_imgs = raw_imgs[num_val_data:,:,:,:]
+    train_y = raw_y[num_val_data:]
+    a = train_imgs.shape[0]
+    print(train_imgs.shape[0], train_y.shape[0])
+    print('before augmentation train_image:', train_imgs.shape)
+    train_imgs, train_y = augment_data(train_imgs, train_y)
+    print('after augmentation train_image:',train_imgs.shape)
+    '''
+    plt.imshow(train_imgs[0].squeeze(0).numpy() * 255, cmap='gray')
+    plt.show()
+    plt.imshow(train_imgs[a].squeeze(0).numpy() * 255, cmap='gray')
+    plt.show()
+    plt.imshow(train_imgs[2 * a].squeeze(0).numpy() * 255, cmap='gray')
+    plt.show()
+    plt.imshow(train_imgs[3 * a].squeeze(0).numpy() * 255, cmap='gray')
+    plt.show()
+    plt.imshow(train_imgs[4 * a].squeeze(0).numpy() * 255, cmap='gray')
+    plt.show()
+    plt.imshow(train_imgs[5 * a].squeeze(0).numpy() * 255, cmap='gray')
+    plt.show()
+    quit()
+    '''
+
+    training_set = Data.TensorDataset(train_imgs, train_y)#Data.TensorDataset(train_imgs[num_val_data:,:,:], train_y[num_val_data:])
     val_set = Data.TensorDataset(
-        torch.tensor(raw_imgs[num_val_data:,:,:,:]).type(torch.FloatTensor), 
-        torch.tensor(raw_y[num_val_data:]).type(torch.LongTensor))
+        torch.tensor(val_imgs).type(torch.FloatTensor), 
+        torch.tensor(val_y).type(torch.LongTensor))
     train_loader = DataLoader(
         training_set, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
+    
+    
     #print(training_set[1])
     #quit()
     # train
@@ -114,12 +161,12 @@ if __name__ == "__main__":
         val_acc = 0
         if num_val_data > 0:
             model.eval()
-            for step, (img, target) in enumerate(val_loader):
+            for _, (img, target) in enumerate(val_loader):
                 img_cuda = img.to(device, dtype=torch.float)
                 target_cuda = target.to(device)
                 output = model(img_cuda)
                 predict = torch.max(output, 1)[1]
-                val_acc = np.sum((target_cuda == predict).cpu().numpy())
+                val_acc += np.sum((target_cuda == predict).cpu().numpy())
             val_acc /= val_set.__len__()
             model.train()
 
