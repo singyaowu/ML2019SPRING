@@ -12,7 +12,7 @@ from torchvision import transforms as tf
 import Model
    
 # parameters
-EPOCH = 1000
+EPOCH = 50
 BATCH_SIZE = 256
 LEARNING_RATE = 0.001
 
@@ -39,6 +39,7 @@ def parse_csv(label_path):
     raw_imgs = raw_imgs.reshape((num_data,1,48,48))
     
     return raw_imgs, raw_y
+    '''
 def augment_data(r_imgs, r_y):
     #f_imgs, f_y = flipped_data(r_imgs, r_y)
     #imgs = np.concatenate((r_imgs, f_imgs), axis=0)
@@ -47,7 +48,7 @@ def augment_data(r_imgs, r_y):
     y = torch.tensor(y).type(torch.LongTensor)
     transform = tf.Compose([
             tf.ToPILImage(),
-            tf.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),            
+            tf.ColorJitter(brightness=0.4, contrast=0.3, saturation=0.3, hue=0.3),            
             tf.RandomHorizontalFlip(),
             tf.RandomRotation(30),
             tf.RandomResizedCrop(48,scale=(0.85,1)),
@@ -65,7 +66,7 @@ def augment_data(r_imgs, r_y):
     #y = torch.cat((y, y), 0)
     print(imgs.size(), y.size())
     return imgs, y
-
+    '''
 class TrainDataset(Dataset):
     def __init__(self, raw_imgs, raw_y):
         aug_imgs, aug_y = flipped_data(raw_imgs, raw_y)
@@ -75,7 +76,7 @@ class TrainDataset(Dataset):
         self.y = torch.tensor(y).type(torch.LongTensor)
         self.transform = tf.Compose([
             tf.ToPILImage(),
-            tf.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+            tf.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
             tf.RandomRotation(30),            
             tf.RandomResizedCrop(48,scale=(0.8,1)),
             tf.ToTensor()
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     raw_imgs = (c[:, :-1]).reshape(imgs_shape)
     raw_y = (c[:, -1]).reshape(y_shape)
     
-    num_val_data = raw_imgs.shape[0] // 6
+    num_val_data = 0#raw_imgs.shape[0] // 12
     val_imgs = raw_imgs[:num_val_data,:,:]
     val_y = raw_y[:num_val_data]
 
@@ -186,7 +187,9 @@ if __name__ == "__main__":
                 torch.save(model.state_dict(), 'model_params.pkl')
                 print('saved new parameters')
             model.train()
-
+        if epoch % 10 == 0:
+            torch.save(model.state_dict(), 'model_params.pkl')
+            print('saved new parameters')
         print("Epoch: {}| Loss: {:.4f}| Acc: {:.4f}| Val Acc: {:.4f}"\
             .format(epoch + 1, np.mean(train_loss), acc, val_acc))
     
