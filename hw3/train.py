@@ -10,9 +10,9 @@ from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 from torchvision import transforms as tf
 import Model
-   
+
 # parameters
-EPOCH = 50
+EPOCH = 1
 BATCH_SIZE = 256
 LEARNING_RATE = 0.001
 
@@ -104,25 +104,6 @@ if __name__ == "__main__":
     train_imgs = raw_imgs[num_val_data:,:,:,:]
     train_y = raw_y[num_val_data:]
     a = train_imgs.shape[0]
-    print(train_imgs.shape[0], train_y.shape[0])
-    print('before augmentation train_image:', train_imgs.shape)
-    #train_imgs, train_y = augment_data(train_imgs, train_y)
-    print('after augmentation train_image:',train_imgs.shape)
-    '''
-    plt.imshow(train_imgs[0].squeeze(0).numpy() * 255, cmap='gray')
-    plt.show()
-    plt.imshow(train_imgs[a].squeeze(0).numpy() * 255, cmap='gray')
-    plt.show()
-    plt.imshow(train_imgs[2 * a].squeeze(0).numpy() * 255, cmap='gray')
-    plt.show()
-    plt.imshow(train_imgs[3 * a].squeeze(0).numpy() * 255, cmap='gray')
-    plt.show()
-    plt.imshow(train_imgs[4 * a].squeeze(0).numpy() * 255, cmap='gray')
-    plt.show()
-    plt.imshow(train_imgs[5 * a].squeeze(0).numpy() * 255, cmap='gray')
-    plt.show()
-    quit()
-    '''
 
     training_set = TrainDataset(train_imgs, train_y)
     val_set = Data.TensorDataset(
@@ -132,9 +113,6 @@ if __name__ == "__main__":
         training_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
     
-    
-    #print(training_set[1])
-    #quit()
     # train
     device = torch.device('cuda')
     model = Model.MyCNN()
@@ -197,31 +175,5 @@ if __name__ == "__main__":
     # save parameters
     # torch.save(model, 'model.pkl') # entire net
     torch.save(model.state_dict(), 'model_params.pkl') # parameters
-    # test
-    output_file = open(sys.argv[3], 'w')
-    output_file.write("id,label\n")
     
-    test_imgs, ids = parse_csv(sys.argv[2])
-    test_imgs = torch.tensor(test_imgs).type(torch.FloatTensor)
-    num_test_data = test_imgs.size()[0]
-    print('num_test_data=', num_test_data)
-    test_set = Data.TensorDataset(test_imgs)
-    test_loader = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False)
-    predict_y = None
-    for step, (img) in enumerate(test_loader):
-        img_cuda = img[0].to(device, dtype=torch.float)
-        output = model(img_cuda)
-        predict = torch.max(output, 1)[1]
-        if predict_y is None:
-            predict_y = predict
-        else:
-            predict_y = torch.cat((predict_y, predict), 0)
-  
-    #predict = model(test_imgs)
-    #predict_y = torch.max(predict, 1)[1]
-    print(predict_y.size())
-    #print(predict_y.size())
-    #print(predict_y)
-    for i in range(num_test_data):
-        output_file.write( str(i) + ',' + str(int(predict_y[i])) + '\n')
-    print('finish')
+

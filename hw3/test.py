@@ -36,10 +36,10 @@ if __name__ == "__main__":
     model.to(device)
     model.eval()
     # test
-    output_file = open(sys.argv[1], 'w')
+    output_file = open(sys.argv[2], 'w')
     output_file.write("id,label\n")
     
-    test_imgs, ids = parse_csv(sys.argv[2])
+    test_imgs, ids = parse_csv(sys.argv[1])
     test_imgs = torch.tensor(test_imgs).type(torch.FloatTensor)
     num_test_data = test_imgs.size()[0]
     print('num_test_data=', num_test_data)
