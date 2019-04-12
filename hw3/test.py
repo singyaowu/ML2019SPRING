@@ -1,14 +1,11 @@
 import numpy as np
 import sys
 import torch
-import csv
 import torch.nn as nn
 from torch.optim import Adam
 import torch.utils.data as Data
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
-from torchvision.transforms import *
 import Model
 BATCH_SIZE = 256
 def parse_csv(label_path):

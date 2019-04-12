@@ -7,7 +7,6 @@ from torch.optim import Adam
 import torch.utils.data as Data
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
 from torchvision import transforms as tf
 import Model
 
