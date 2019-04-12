@@ -5,6 +5,7 @@ import torch
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import Model
+from copy import deepcopy
 from lime import lime_image
 import skimage.color as color
 from skimage.segmentation import slic
@@ -147,26 +148,46 @@ if __name__ == "__main__":
         ,imgs[45:46],imgs[52:53],imgs[65:66]), axis=0)
     s_imgs_tensor = torch.tensor(s_imgs).type(torch.FloatTensor)
     s_label_tensor = torch.tensor(np.arange(7)).type(torch.LongTensor)
-    show_saliency_maps(s_imgs_tensor, s_label_tensor, model)
-    
-    # Lime needs RGB images
+ 
     
     lime_imgs = np.concatenate((imgs[5:6],imgs[18:19],imgs[23:24],imgs[30:31]\
         ,imgs[41:42],imgs[52:53],imgs[60:61]), axis=0)
-    
-    x_train_rgb = gray2rgb(lime_imgs)
-    # Initiate explainer instance
-    
-    explainer = lime_image.LimeImageExplainer()
-    for idx in range(len(x_train_rgb)):
-        # Get the explaination of an image
-        np.random.seed(16)
-        explaination = explainer.explain_instance(image=x_train_rgb[idx], 
-                    classifier_fn=predict,segmentation_fn=segmentation)
 
-        # Get processed image
-        label = np.arange(7)
-        image, mask = explaination.get_image_and_mask(label=label[idx],positive_only=False,
-                    hide_rest=False,num_features=5,min_weight=0.0)
-        # save the image
-        plt.imsave(sys.argv[2]+'fig3_'+str(idx)+'.jpg' ,image)
+    for i in range(7):
+        
+        box_size = 8
+        stripe = 8
+        file_name = str(i)+'-face.npy'
+        try:
+            myimgs = np.load(file_name)
+        except:    
+            myimgs = deepcopy(lime_imgs[i:i+1])
+            for up in range(0,48, stripe):
+                for left in range(0, 48, stripe):
+                    img_now = deepcopy(lime_imgs[i:i+1])
+                    right = min(48, left+box_size)
+                    bot = min(48, up+box_size)
+                    img_now[0, 0, up:bot, left:right] = 0.1
+                    myimgs = np.concatenate((myimgs, img_now), axis=0)
+            np.save(file_name, myimgs)
+        
+        print(myimgs.shape)
+        imgs_tensor = torch.tensor(myimgs).type(torch.FloatTensor).cuda()
+        output = model(imgs_tensor)
+        #output = output.cpu().detach().numpy()
+        print(output.shape)
+        f = plt.figure()
+        f.suptitle("ground truth: %d"%i)
+        f.set_figheight(10)
+        f.set_figwidth(18)
+        for j in range(myimgs.shape[0]):
+            ax = plt.subplot(4, myimgs.shape[0]//4+1, j+1)
+            plt.imshow(myimgs[j].reshape(48,48), cmap=plt.cm.gray)
+            ax.set_title('score:%.3f\npredict: %d' %(output[j, i],torch.max(output,1)[1][j]))
+            plt.axis('off')
+        plt.savefig(str(i)+'-face.jpg')
+        plt.close()
+
+
+
+    

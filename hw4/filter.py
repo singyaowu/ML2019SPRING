@@ -1,4 +1,5 @@
 import sys
+import os
 import csv
 import numpy as np
 import torch
@@ -40,7 +41,7 @@ if __name__ == "__main__":
         plt.xlabel("filter" + str(filterID))
         plt.axis('off')
     plt.suptitle('Filters of layer conv2d_2')
-    plt.savefig(sys.argv[1]+'fig2-1.jpg')
+    plt.savefig(os.path.join(sys.argv[1], 'fig2-1.jpg'))
     plt.close()
     imgs = np.load('cimgs.npy')
     for i in range(2, 3):
@@ -59,5 +60,5 @@ if __name__ == "__main__":
             plt.xlabel("filter" + str(filterID))
             plt.axis('off')
         plt.suptitle('Filters of layer conv2d_2')
-        plt.savefig(sys.argv[1]+'fig2-2.jpg')
+        plt.savefig(os.path.join(sys.argv[1], 'fig2-2.jpg'))
         plt.close()

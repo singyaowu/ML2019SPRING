@@ -1,5 +1,5 @@
 import sys
-import csv
+import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -62,7 +62,7 @@ def show_saliency_maps(x, y, model):
             im = plt.imshow(saliency[i], cmap=plt.cm.jet)
             plt.colorbar(im)
 
-            plt.savefig(sys.argv[2]+'fig1_'+str(i)+'.jpg')
+            plt.savefig(os.path.join(sys.argv[2], 'fig1_'+str(i)+'.jpg'))
             plt.close()
 
 def compute_saliency_maps(x, y, model):
@@ -158,4 +158,4 @@ if __name__ == "__main__":
         image, mask = explaination.get_image_and_mask(label=label[idx],positive_only=False,
                     hide_rest=False,num_features=5,min_weight=0.0)
         # save the image
-        plt.imsave(sys.argv[2]+'fig3_'+str(idx)+'.jpg' ,image)
+        plt.imsave(os.path.join(sys.argv[2], 'fig3_'+str(idx)+'.jpg') ,image)
