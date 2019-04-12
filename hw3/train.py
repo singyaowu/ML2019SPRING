@@ -1,7 +1,6 @@
 import numpy as np
 import sys
 import torch
-import csv
 import torch.nn as nn
 from torch.optim import Adam
 import torch.utils.data as Data
