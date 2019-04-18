@@ -13,7 +13,7 @@ import torchvision.transforms as tf
 from torchvision.models import resnet50
 
 from PIL import Image
-
+from skimage import io
 import scipy.misc
 
 def read_labels(label_path, cat_path):
@@ -23,19 +23,19 @@ def read_labels(label_path, cat_path):
 
 def read_img_dir(dir_path, num_imgs):
     img_path = [os.path.join(dir_path, '%03d'%i + '.png') for i in range(num_imgs)]
-    return [Image.open(img_path[i]) for i in range(num_imgs)]
+    return [io.imread(img_path[i]) for i in range(num_imgs)]
 
 if __name__ == "__main__":
     model = resnet50(pretrained=True)
     model.eval()
     # *** parameters ***
-    epsilon = 0.28
+    epsilon = 0.015
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     
     loss_func = nn.CrossEntropyLoss()
     trans = tf.Compose([tf.ToTensor(), tf.Normalize(mean=mean, std=std)])
-    inv_trans = tf.Compose([tf.ToPILImage()])
+    inv_trans = tf.Compose([tf.Normalize(mean=(-mean/std), std=(1/std))])
     
     # read files
     tar_labels = read_labels('labels.csv', 'categories.csv') # shape=200
@@ -66,14 +66,14 @@ if __name__ == "__main__":
         
         #inverse transform
         img= img.squeeze(0)
-        img = tf.Normalize(mean=(-mean/std), std=(1/std))(img)
+        img = inv_trans(img)
         img = torch.clamp(img, min=0.0, max=1)
         
         img= img.numpy()
         img = np.transpose(img, (1,2,0))
         scipy.misc.imsave(output_path, img)
         
-        L_inf = max(abs( np.array(img, dtype=float).reshape(-1) - np.array(raw_imgs[i], dtype=float).reshape(-1)) ) * 255
+        L_inf = max(abs( np.array(img, dtype=float).reshape(-1) - np.array(raw_imgs[i], dtype=float).reshape(-1)/255) )*255
         L_infs[i] = L_inf
         print('ground Truth: %d, predict: %d, L-infinity:%f'%(tar_labels[i], pred_labels[i], L_infs[i]))
     
