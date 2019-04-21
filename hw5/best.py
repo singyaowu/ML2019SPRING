@@ -14,7 +14,6 @@ from torchvision.models import resnet50
 
 from PIL import Image
 from skimage import io
-import scipy.misc
 
 def read_labels(label_path, cat_path):
     with open(label_path, 'r') as labfp:
@@ -24,42 +23,6 @@ def read_labels(label_path, cat_path):
 def read_img_dir(dir_path, num_imgs):
     img_path = [os.path.join(dir_path, '%03d'%i + '.png') for i in range(num_imgs)]
     return [io.imread(img_path[i]) for i in range(num_imgs)]
-
-def fgsm(img):
-    img = trans(img)
-    img = img.unsqueeze(0)
-    zero_gradients(img)
-    output = model(img)
-    loss = -nn.CrossEntropyLoss()(output, tar_label)
-    loss.backward()
-    
-    img = img - epsilon * img.grad.sign_() #(1, 3, 224, 224)
-    return img
-
-def basic_iterative(img, model, trans, inv_trans, tar_label):
-    N = int(min(30+4, 1.25 * 30))
-    alpha = 1 / 255
-    for i in range(N):
-        img = trans(img)
-        img= img.unsqueeze(0)
-        
-        zero_gradients(img)
-        output = model(img)
-
-        loss = -nn.CrossEntropyLoss()(output, tar_label)
-        loss.backward()
-
-        print(loss)
-        update = img.grad.sign_().squeeze(0)
-        
-        img= img.squeeze(0)
-        img = inv_trans(img)
-        img = img - alpha * update
-        img = torch.clamp(img, min=0.0, max=1)
-    
-    img = trans(img)
-    img = img.unsqueeze(0)
-    return img
 
 if __name__ == "__main__":
     model = resnet50(pretrained=True)
@@ -122,7 +85,7 @@ if __name__ == "__main__":
         
         img= img.numpy()
         img = np.transpose(img, (1,2,0))
-        scipy.misc.imsave(output_path, img)
+        io.imsave(output_path, img)
         
         L_inf = max(abs( np.array(img, dtype=float).reshape(-1) - np.array(raw_imgs[i], dtype=float).reshape(-1)/255) )*255
         L_infs[i] = L_inf
