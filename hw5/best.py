@@ -3,16 +3,13 @@ import csv
 import os
 
 import numpy as np
-from numpy import linalg as LA
 
 import torch 
 import torch.nn as nn
 from torch.autograd.gradcheck import zero_gradients
-
 import torchvision.transforms as tf
 from torchvision.models import resnet50
 
-from PIL import Image
 from skimage import io
 
 def read_labels(label_path, cat_path):
@@ -87,7 +84,7 @@ if __name__ == "__main__":
         img = np.transpose(img, (1,2,0))
         io.imsave(output_path, img)
         
-        L_inf = max(abs( np.array(img, dtype=float).reshape(-1) - np.array(raw_imgs[i], dtype=float).reshape(-1)/255) )*255
+        L_inf = int(max(abs( np.array(img, dtype=float).reshape(-1) - np.array(raw_imgs[i], dtype=float).reshape(-1)/255) )*255)
         L_infs[i] = L_inf
         print('ground Truth: %d, predict: %d, L-infinity:%f'%(tar_labels[i], pred_labels[i], L_infs[i]))
     

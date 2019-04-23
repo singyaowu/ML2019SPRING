@@ -3,25 +3,23 @@ import csv
 import os
 
 import numpy as np
-from numpy import linalg as LA
 
-import torch 
+import torch
 import torch.nn as nn
 from torch.autograd.gradcheck import zero_gradients
-
 import torchvision.transforms as tf
 from torchvision.models import resnet50
 
-from PIL import Image
+from skimage import io
 
-def read_categories(label_path, cat_path):
+def read_labels(label_path, cat_path):
     with open(label_path, 'r') as labfp:
         lab_csv = csv.DictReader(labfp)
         return np.array([int(row['TrueLabel']) for row in lab_csv], dtype=np.int64)
 
 def read_img_dir(dir_path, num_imgs):
     img_path = [os.path.join(dir_path, '%03d'%i + '.png') for i in range(num_imgs)]
-    return [Image.open(img_path[i]) for i in range(num_imgs)]
+    return [io.imread(img_path[i]) for i in range(num_imgs)]
 
 if __name__ == "__main__":
     model = resnet50(pretrained=True)
@@ -33,10 +31,10 @@ if __name__ == "__main__":
     
     loss_func = nn.CrossEntropyLoss()
     trans = tf.Compose([tf.ToTensor(), tf.Normalize(mean=mean, std=std)])
-    inv_trans = tf.Compose([tf.Normalize(mean=(-mean/std), std=(1/std)), tf.ToPILImage()])
+    inv_trans = tf.Compose([tf.Normalize(mean=(-mean/std), std=(1/std))])
     
     # read files
-    tar_labels = read_categories('labels.csv', 'categories.csv') # shape=200
+    tar_labels = read_labels('labels.csv', 'categories.csv') # shape=200
     raw_imgs = read_img_dir(sys.argv[1], tar_labels.shape[0])
     
     pred_labels = np.empty(shape=tar_labels.shape)
@@ -62,19 +60,19 @@ if __name__ == "__main__":
         img = img.detach()
         pred_labels[i] = torch.max(model(img), 1)[1]
         
-        # inverse transforms
+        #inverse transform
         img= img.squeeze(0)
-        img = tf.Normalize(mean=(-mean/std), std=(1/std))(img)
-        img = torch.clamp(img, min=0.0, max=1.0)
-        img = tf.ToPILImage()(img)
+        img = inv_trans(img)
+        img = torch.clamp(img, min=0.0, max=1)
         
-        img.save(output_path)
+        img= img.numpy()
+        img = np.transpose(img, (1,2,0))
+        io.imsave(output_path, img)
         
-        L_inf = max(abs( np.array(img, dtype=float).reshape(-1) - np.array(raw_imgs[i], dtype=float).reshape(-1)))
+        L_inf = int(max(abs( np.array(img, dtype=float).reshape(-1) - np.array(raw_imgs[i], dtype=float).reshape(-1)/255) )*255)
         L_infs[i] = L_inf
         print('ground Truth: %d, predict: %d, L-infinity:%f'%(tar_labels[i], pred_labels[i], L_infs[i]))
     
     success_rate = np.mean((pred_labels != tar_labels))
     L_inf = np.mean(L_infs)
     print('success rate:%f, L_infinity:%f'%(success_rate, L_inf))
-        
