@@ -2,28 +2,29 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-class LSTM(nn.Module):
-    def __init__(self):
-        super(LSTM, self).__init__()
 
-        self.rnn = nn.LSTM(
-            input_size=200,
-            hidden_size=64,
-            num_layers=1,
+class MyLSTM(nn.Module):
+    def __init__(self, vecSize):
+        super(MyLSTM, self).__init__()
+
+        self.rnn1 = nn.LSTM(
+            input_size=vecSize,
+            hidden_size=256,
+            num_layers=2,
             batch_first=True,
-            #dropout=0.3
+            dropout=0.3
         )
-        self.fc = nn.Linear(64, 1)
-        self.out = nn.Sigmoid()
+        
+        self.fc = nn.Sequential( 
+            #nn.BatchNorm1d(256),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            #nn.BatchNorm1d(128),
+            nn.Dropout(0.3),
+            nn.Linear(128, 1),
+            nn.Sigmoid()
+        )
     def forward(self, x):
-        # x shape (batch, time_step, input_size)
-        # r_out shape (batch, time_step, output_size)
-        # h_n shape (n_layers, batch, hidden_size)   LSTM 有两个 hidden states, h_n 是分线, h_c 是主线
-        # h_c shape (n_layers, batch, hidden_size)
-        r_out, (h_n, h_c) = self.rnn(x, None)   # None 表示 hidden state 会用全0的 state
-
-        # 选取最后一个时间点的 r_out 输出
-        # 这里 r_out[:, -1, :] 的值也是 h_n 的值
-        fc = self.fc(r_out[:, -1, :])
-        out = self.out(fc)
-        return out
+        rnn1_out, (_,_) = self.rnn1(x, None)
+        out = self.fc(rnn1_out[:, -1, :].view(-1, 256))
+        return out.view(-1)
