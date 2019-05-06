@@ -18,69 +18,58 @@ import Model
 BATCH_SIZE = 128
 
 #bash hw6_test.sh <test_x file> <dict.txt.big file> <output file>
-test_x_path = 'test_x.csv'
-output_path = 'submission.csv'
-dict_txt_path = 'dict.txt.big'
-vecSize = 150
-senSize = 100
-shaffle = False
-
-jieba.load_userdict(dict_txt_path)
-wv = KeyedVectors.load("word2vec%d.model"%vecSize, mmap='r')
-
-
-print('====== Reading Testing data.csv ======')
 try:
-    assert 1 == 0
-    x_test = np.load('x_test.npy')
-    assert x_test.shape[2] == vecSize
-    assert x_test.shape[1] == senSize
+    test_x_path = sys.argv[1] # 'test_x.csv'
+    dict_txt_path = sys.argv[2] #'dict.txt.big'
+    output_path = sys.argv[3] #'submission.csv'
 except:
-    '''
-    print('====== Reading test_x.csv ======')
-    x = pd.read_csv(test_x_path, sep=',', dtype={'id': int, 'comment':str}, index_col=0)
-    
-    x_test = np.zeros(shape=(len(x), senSize, vecSize), dtype=float)
-    for i_row, sen in enumerate(x['comment']):
-        #for i_w, w in enumerate(list(jieba.cut(emoji.demojize(sen), cut_all=False))):
-        for i_w, w in enumerate(list(jieba.cut(sen, cut_all=False))):
-            if i_w >= senSize: break
-            x_test[i_row, i_w, :] = wv[w]
-    np.save('x_test.npy', x_test)
-   
-    del x
-    '''
-    x = []
-    print('====== Reading test_x.csv ======')
-    with open(test_x_path, newline='') as x_fp:
-        count = 0
-        for i in x_fp.readlines()[1:]:
-            c = i.split(',', 1)
-            c = list(jieba.cut(c[1]))
-            x.append(c)
-            count += 1
-    x = np.array(x)
+    print('use default')
+    test_x_path = 'test_x.csv'
+    dict_txt_path = 'dict.txt.big'
+    output_path = 'submission.csv'
 
-    w2v_model = Word2Vec.load('word2vec%d.model'%vecSize)
+vecSize = 150
+senSize = 128
+shaffle = False
+model_name = 'model_tmp.pkl'
+jieba.load_userdict(dict_txt_path)
+w2v = Word2Vec.load("word2vec%d.model"%vecSize, mmap='r')
 
-    for i in range(count):
-        if(len(x[i]) > senSize):
-            x[i] = x[i][:senSize]
+'''
+print('====== Reading test_x.csv ======')
+x = pd.read_csv(test_x_path, sep=',', dtype={'id': int, 'comment':str}, index_col=0)
 
-    tmp = np.zeros((count, senSize, vecSize), dtype=float)
-    for i in range(count):
+x_test = np.zeros(shape=(len(x), senSize, vecSize), dtype=float)
+for i_row, sen in enumerate(x['comment']):
+    #for i_w, w in enumerate(list(jieba.cut(emoji.demojize(sen), cut_all=False))):
+    for i_w, w in enumerate(list(jieba.cut(sen, cut_all=False))):
+        if i_w >= senSize: break
+        x_test[i_row, i_w, :] = wv[w]
+del x
+'''
+x = []
+print('====== Reading test_x.csv ======')
+with open(test_x_path, newline='') as x_fp:
+    for line in x_fp.readlines()[1:]:
+        tmp = list(jieba.cut(line.split(',', 1)[1]))
+        
+        x.append([w for w in tmp if w in w2v.wv.vocab])
+x = np.array(x)
 
-        for j in range(len(x[i])):
-            tmp[i, j, :] = w2v_model.wv[x[i][j]]
-    x = tmp
-    x_test = x
+x_test = np.zeros((x.shape[0], senSize, vecSize), dtype=float)
+for i in range(x.shape[0]):
+    if(len(x[i]) > senSize):
+        x[i] = x[i][:senSize]
+    for j in range(len(x[i])):
+        x_test[i, j, :] = w2v.wv[x[i][j]]
+del x
     
 num_test = x_test.shape[0] 
 test_set = Data.TensorDataset(
         torch.tensor(x_test).type(torch.FloatTensor) )
 test_loader = DataLoader(test_set, batch_size=BATCH_SIZE, shuffle=False)
 
-model = torch.load('model.pkl')
+model = torch.load(model_name)
 device = torch.device('cuda')
 model.to(device)
 model.eval()
