@@ -37,7 +37,7 @@ class MyLSTM(nn.Module):
 
         self.rnn1 = nn.LSTM(
             input_size=vecSize,
-            hidden_size=256,
+            hidden_size=128,
             num_layers=2,
             bidirectional=True,
             batch_first=True,
@@ -45,8 +45,8 @@ class MyLSTM(nn.Module):
         )
         
         self.fc = nn.Sequential( 
-            nn.BatchNorm1d(512),
-            nn.Linear(512, 128),
+            nn.BatchNorm1d(256),
+            nn.Linear(256, 128),
             
             nn.ReLU(),
             nn.BatchNorm1d(128),

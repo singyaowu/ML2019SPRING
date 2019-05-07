@@ -31,7 +31,7 @@ except:
 vecSize = 150
 senSize = 128
 shaffle = False
-model_name = 'model_tmp.pkl'
+model_name = 'model_strong0.761.pkl'
 jieba.load_userdict(dict_txt_path)
 w2v = Word2Vec.load("word2vec%d.model"%vecSize, mmap='r')
 
