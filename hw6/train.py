@@ -19,11 +19,10 @@ EPOCH = 25
 BATCH_SIZE = 64
 LEARNING_RATE = 0.0003
 
-#bash hw6_test.sh <test_x file> <dict.txt.big file> <output file>
 #bash hw6_train.sh <train_x file> <train_y file> <test_x.csv file> <dict.txt.big file>
-x_path = 'train_x.csv'
-y_path = 'train_y.csv'
-dict_txt_path = 'dict.txt.big'
+x_path = sys.argv[1] #'train_x.csv'
+y_path = sys.argv[2] #'train_y.csv'
+dict_txt_path = sys.argv[3] #'dict.txt.big'
 vecSize = 150
 senSize = 128
 shuffle = False
@@ -61,26 +60,6 @@ for i in range(x.shape[0]):
     for j in range(len(x[i])):    
         x_train[i, j, :] = w2v.wv[x[i][j]]
 del x
-    #np.save('x_train.npy', x_train)
-    #np.save('y_train.npy', y_train)
-    #np.save('x_config.npy', x_train.shape)
-''' 
-    x = pd.read_csv(x_path, sep=',', dtype={'id': int, 'comment':str}, index_col=0)
-    print('====== Reading train_y.csv ======')
-    y = pd.read_csv(y_path, sep=',', dtype={'id': int, 'label':int}, index_col=0)
-    
-    x_train = np.zeros(shape=(len(x), senSize, vecSize), dtype=float)
-    for i_row, sen in enumerate(x['comment']):
-        #for i_w, w in enumerate(list(jieba.cut(emoji.demojize(sen), cut_all=False))):
-        for i_w, w in enumerate(list(jieba.cut(sen, cut_all=False))):
-            if i_w >= senSize: break
-            x_train[i_row, i_w, :] = wv[w]
-    np.save('x_train.npy', x_train)
-    y_train = y['label'].values
-    np.save('y_train.npy', y_train)
-
-    np.save('x_config.npy', x_train.shape)
-    '''
 
 print('====== Extract Verification data.csv ======')
 if shuffle:
@@ -93,8 +72,6 @@ num_total = x_train.shape[0]
 num_val = num_total // 10
 print('total: %d'%num_total)
 if num_val > 0:
-    #x_train = x_train[:-num_val]
-    #y_train = y_train[:-num_val]
     val_set = Data.TensorDataset(
             torch.tensor(x_train[-num_val:]).type(torch.FloatTensor), 
             torch.tensor(y_train[-num_val:]).type(torch.LongTensor))
@@ -142,8 +119,6 @@ for epoch in range(EPOCH):
         #print(predict)
         cal = (y_cuda == predict).cpu().numpy()
         train_acc +=np.sum(cal)
-        #acc = np.mean(cal)
-        #train_acc_list.append(acc)
         train_loss.append(loss.item())
     #acc = np.mean(train_acc_list)
     train_acc /= train_set.__len__()

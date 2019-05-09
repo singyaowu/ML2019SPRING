@@ -18,15 +18,9 @@ import Model
 BATCH_SIZE = 128
 
 #bash hw6_test.sh <test_x file> <dict.txt.big file> <output file>
-try:
-    test_x_path = sys.argv[1] # 'test_x.csv'
-    dict_txt_path = sys.argv[2] #'dict.txt.big'
-    output_path = sys.argv[3] #'submission.csv'
-except:
-    print('use default')
-    test_x_path = 'test_x.csv'
-    dict_txt_path = 'dict.txt.big'
-    output_path = 'submission.csv'
+test_x_path = sys.argv[1] # 'test_x.csv'
+dict_txt_path = sys.argv[2] #'dict.txt.big'
+output_path = sys.argv[3] #'submission.csv'
 
 vecSize = 150
 senSize = 128
@@ -35,18 +29,6 @@ model_name = 'model_strong0.761.pkl'
 jieba.load_userdict(dict_txt_path)
 w2v = Word2Vec.load("word2vec%d.model"%vecSize, mmap='r')
 
-'''
-print('====== Reading test_x.csv ======')
-x = pd.read_csv(test_x_path, sep=',', dtype={'id': int, 'comment':str}, index_col=0)
-
-x_test = np.zeros(shape=(len(x), senSize, vecSize), dtype=float)
-for i_row, sen in enumerate(x['comment']):
-    #for i_w, w in enumerate(list(jieba.cut(emoji.demojize(sen), cut_all=False))):
-    for i_w, w in enumerate(list(jieba.cut(sen, cut_all=False))):
-        if i_w >= senSize: break
-        x_test[i_row, i_w, :] = wv[w]
-del x
-'''
 x = []
 print('====== Reading test_x.csv ======')
 with open(test_x_path, newline='') as x_fp:
