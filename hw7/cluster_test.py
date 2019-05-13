@@ -15,10 +15,12 @@ from torchvision import transforms as tf
 import Model
 import Mydataset
 from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
 
 BATCH_SIZE = 512
 num_imgs = 40000
-model_name = 'model_tmp416.pkl'
+model_name = 'model_finish_32dim.pkl'
 images_path = sys.argv[1]
 test_path = sys.argv[2]
 output_path = sys.argv[3]
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     model = torch.load(model_name)
     model.cuda()
     model.eval()
-    img_codes = np.zeros(shape=(1, 64), dtype=float)
+    img_codes = np.zeros(shape=(1, 32), dtype=float)
     for step, (imgs) in enumerate(test_loader):
         imgs_cuda = imgs.cuda()
         output = model.encode(imgs_cuda)
@@ -43,15 +45,23 @@ if __name__ == "__main__":
         img_codes = np.concatenate((img_codes, out_codes), axis=0)
         #print(img_codes)
     img_codes = img_codes[1:]
-
+    std = np.std(img_codes, axis=1)
+    print('std:', np.mean(std))
     print(img_codes.shape)
     #print(img_codes)
     print('=== start clustering ===')
     clf = KMeans(n_clusters=2, random_state=0)
     clf.fit(img_codes)
-    print(type(clf.labels_))
     print('clf.labels_\'s len: %d'%len(clf.labels_))
     
+    #tsne = TSNE(n_components=2,init='pca')
+    #code_tsne = tsne.fit_transform(img_codes)
+    #code_min, code_max = code_tsne.min(0), img_tsne.max(0)
+    #code_norm = (code_tsne-code_min)/(code_max-code_min)
+
+    #color = [['r', 'b'][i] for i in clf.labels_]
+    #plt.scatter(code_norm[:,0], code_norm[:,1], s=1, c=color)
+
     #print(test_df)
     print('=== predicting ===')
     test_df = pd.read_csv(test_path, sep=',', dtype= {'id': int, 'image1_name':int, 'image2_name':int})

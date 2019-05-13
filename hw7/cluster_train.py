@@ -15,7 +15,7 @@ import torchvision.utils as vutils
 import Model
 import Mydataset
 from skimage import io
-
+from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 
 LEARNING_RATE = 0.0001
@@ -37,18 +37,19 @@ if __name__ == "__main__":
     num_imgs = 40000
     images_path = sys.argv[1]
     if validation:
-        start_val = (num_imgs * 3) // 4+1
+        num_val = 400
+        start_val = num_imgs - num_val
         train_dataset = Mydataset.TrainDataset( (1,start_val), images_path)
         val_dataset = Mydataset.TrainDataset( (start_val,num_imgs+1), images_path)
-        val_loader = DataLoader(val_dataset,batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
+        val_loader = DataLoader(val_dataset,batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
     else: train_dataset = Mydataset.TrainDataset( (1,num_imgs+1), images_path)
     train_loader = DataLoader(train_dataset,batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
     
-    model = Model.MyAutoEncoder()
+    model = Model.MyAutoEncoderCNN()
     model.cuda()
     model.train()
     
-    optimizer = Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5)
+    optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
     criterion = nn.MSELoss()
 
     print('=== start training ===')
@@ -70,21 +71,39 @@ if __name__ == "__main__":
 
         train_loss = np.mean(train_loss_list)
         val_loss = 0
-        if validation:
-            model.eval()
-            for _, (imgs) in enumerate(val_loader):
-                imgs_cuda = imgs.cuda()
-                output = model(imgs_cuda)
-                loss = criterion(output, imgs_cuda)
-                
-                val_loss_list.append(loss.item())
-            val_loss = np.mean(val_loss_list)
-            model.train()
+        
         if epoch % 32 == 0:
             torch.save(model, 'model_tmp.pkl')
             save_imgs(imgs, '%d_original.jpg'%epoch)
             save_imgs(output.cpu().detach(), '%d_decode.jpg'%epoch)
             torch.save(model, 'model_tmp%d.pkl'%epoch)
+            if validation:
+                model.eval()
+                img_codes = np.zeros(shape=(1, 128), dtype=float)
+                imgs_cat = torch.new_empty(size=(num_val, 3, 32, 32), dtype=torch.FloatTensor)
+                for step, (imgs) in enumerate(val_loader):
+                    imgs_cat[step * BATCH_SIZE : step * BATCH_SIZE + imgs.size()[0]] = imgs
+                    imgs_cuda = imgs.cuda()
+                    code = model.encode(imgs_cuda)
+                    out_codes = code.cpu().detach().numpy()
+                    img_codes = np.concatenate((img_codes, out_codes), axis=0)
+                    
+                    output = model.decode(code)
+                    loss = criterion(output, imgs_cuda)
+                    val_loss_list.append(loss.item())
+                
+                img_codes = img_codes[1:]
+                val_loss = np.mean(val_loss_list)
+                model.train()
+
+                clf = KMeans(n_clusters=2, random_state=0)
+                clf.fit(img_codes)
+                idx_face = np.where(clf.labels_==1) +1
+                idx_other = np.where(clf.labels_==0) +1
+
+                print('num face: %d, num other: %d'%(len(idx_face), len(idx_other)))
+
+
         print("Epoch: {}| Train Loss: {:.6f}| Val Loss: {:.6f}"\
             .format(epoch + 1, train_loss, val_loss))
         
