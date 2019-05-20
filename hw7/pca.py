@@ -19,7 +19,7 @@ def process(M):
 
 if __name__ == '__main__':
     filelist = os.listdir(IMAGE_PATH) 
-
+    filelist = [filename for filename in filelist if filename[0] != '.']
     # Record the shape of images
     img_shape = imread(os.path.join(IMAGE_PATH,filelist[0])).shape 
 
