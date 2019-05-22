@@ -17,8 +17,8 @@ import Mydataset
 
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-
+#from sklearn.manifold import TSNE
+from MulticoreTSNE import MulticoreTSNE as TSNE
 import matplotlib.pyplot as plt
 
 BATCH_SIZE = 128
@@ -53,7 +53,8 @@ if __name__ == "__main__":
         pca = PCA(n_components=2, copy=False, whiten=True, svd_solver='full')
         latent_vec = pca.fit_transform(latent_vec)
     elif cluster_method == 't-SNE':
-        tsne = TSNE(n_components=2,init='pca')
+        tsne = TSNE(n_components=2, verbose=1, perplexity=50, n_jobs=8, random_state=0)
+        #tsne = TSNE(n_components=2,init='pca', random_state=0)
         latent_vec = tsne.fit_transform(latent_vec)
     
     clf = KMeans(n_clusters=2, random_state=0)

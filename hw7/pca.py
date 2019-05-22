@@ -18,7 +18,7 @@ def process(M):
     return M
 
 if __name__ == '__main__':
-    filelist = os.listdir(IMAGE_PATH) 
+    filelist = os.listdir(IMAGE_PATH)
     filelist = [filename for filename in filelist if filename[0] != '.']
     # Record the shape of images
     img_shape = imread(os.path.join(IMAGE_PATH,filelist[0])).shape 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # Calculate mean & Normalize
     mean = np.mean(training_data, axis = 0)  
     training_data -= mean 
-
+    print('mean shape:',mean.shape)
     # Use SVD to find the eigenvectors 
     u, s, v = np.linalg.svd(training_data.T, full_matrices = False, compute_uv=True)
     u_principle = u[:,:k] #(m,k)
@@ -47,18 +47,20 @@ if __name__ == '__main__':
         
         # Compression
         #weight = np.array([picked_img.dot(u_principle.T[i]) for i in range(k)])  
-        weight = (picked_img.reshape(1, -1)).dot(u_principle)
+        weight = (X.reshape(1, -1)).dot(u_principle)
+        print('weight shape:', weight.shape)
+        print(weight)
         # Reconstruction
-        reconstruct = process(weight.dot(u_principle.T) + mean)
+        reconstruct = process(weight.dot(u_principle.T).flatten() + mean)
         imsave(x[:-4] + '_reconstruction.jpg', reconstruct.reshape(img_shape)) 
 
     average = process(mean)
     imsave('average.jpg', average.reshape(img_shape))
 
-    for x in range(5):
+    for x in range(k):
         eigenface = process(u_principle.T[x])
         imsave(str(x) + '_eigenface.jpg', eigenface.reshape(img_shape))
 
-    for i in range(5):
+    for i in range(k):
         number = s[i] * 100 / sum(s)
         print(number)
