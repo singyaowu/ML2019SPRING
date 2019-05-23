@@ -3,11 +3,10 @@ import sys
 import numpy as np 
 from skimage.io import imread, imsave
 
-IMAGE_PATH = 'Aberdeen'
+IMAGE_PATH = sys.argv[1] #'Aberdeen'
 
 # Images for compression & reconstruction
-test_image = ['1.jpg','10.jpg','22.jpg','37.jpg','72.jpg'] 
-
+test_image = [sys.argv[2]] #['1.jpg','10.jpg','22.jpg','37.jpg','72.jpg'] 
 # Number of principal components used
 k = 5
 
@@ -52,15 +51,16 @@ if __name__ == '__main__':
         print(weight)
         # Reconstruction
         reconstruct = process(weight.dot(u_principle.T).flatten() + mean)
-        imsave(x[:-4] + '_reconstruction.jpg', reconstruct.reshape(img_shape)) 
+        imsave(sys.argv[3], reconstruct.reshape(img_shape))
+        #imsave(x[:-4] + '_reconstruction.jpg', reconstruct.reshape(img_shape)) 
 
-    average = process(mean)
-    imsave('average.jpg', average.reshape(img_shape))
+    #average = process(mean)
+    #imsave('average.jpg', average.reshape(img_shape))
 
-    for x in range(k):
-        eigenface = process(u_principle.T[x])
-        imsave(str(x) + '_eigenface.jpg', eigenface.reshape(img_shape))
+    #for x in range(k):
+    #    eigenface = process(u_principle.T[x])
+    #    imsave(str(x) + '_eigenface.jpg', eigenface.reshape(img_shape))
 
-    for i in range(k):
-        number = s[i] * 100 / sum(s)
-        print(number)
+    #for i in range(k):
+    #    number = s[i] * 100 / sum(s)
+    #    print(number)
