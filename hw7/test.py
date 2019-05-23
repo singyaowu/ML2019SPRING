@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 class TestDataset(Dataset):
     def __init__(self):
-        self.imgs = np.load("visualization.npy")
+        self.imgs = np.load("../tmp/visualization.npy")
         self.transform = tf.Compose([
             tf.ToTensor(),
             tf.Normalize(mean=[0.5, 0.5, 0.5],std=[0.5, 0.5, 0.5]),
@@ -63,11 +63,14 @@ if __name__ == "__main__":
 
     tsne = TSNE(n_components=2, verbose=1, perplexity=50, n_jobs=8, random_state=0)
     latent_vec = tsne.fit_transform(latent_vec)
-    labels = np.array([0]*2500+[1]*2500)
+    
+    clf = KMeans(n_clusters=2, random_state=0)
+    clf.fit(latent_vec)
+    labels = clf.labels_
 
     code_min, code_max = latent_vec.min(0), latent_vec.max(0)
     code_norm = (latent_vec-code_min)/(code_max-code_min)
-
-    color = [['r', 'b'][i] for i in labels]
+    
+    color = [['b', 'r'][i] for i in labels]
     plt.scatter(code_norm[:,0], code_norm[:,1], s=1, c=color)
     plt.show()
