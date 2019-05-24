@@ -10,7 +10,8 @@ test_image = [sys.argv[2]] #['1.jpg','10.jpg','22.jpg','37.jpg','72.jpg']
 # Number of principal components used
 k = 5
 
-def process(M): 
+def process(img): 
+    M = img.copy()
     M -= np.min(M)
     M /= np.max(M)
     M = (M * 255).astype(np.uint8)
