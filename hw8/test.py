@@ -8,6 +8,28 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 import Model
 BATCH_SIZE = 256
+
+def readfile(path):
+    print("Reading File: %s..."%path)
+    img_test = []
+    img_label = []
+    img_val = []
+    val_label = []
+
+    raw_train = np.genfromtxt(path, delimiter=',', dtype=str, skip_header=1)
+    for i in range(len(raw_train)):
+        tmp = np.array(raw_train[i, 1].split(' ')).reshape(1, 48, 48)
+        img_test.append(tmp)
+
+    img_test = np.array(img_test, dtype=float) / 255.0
+    img_val = np.array(img_val, dtype=float) / 255.0
+    img_label = np.array(img_label, dtype=int)
+    val_label = np.array(val_label, dtype=int)
+
+    img_test = torch.FloatTensor(img_test)
+
+    return img_test, img_label, img_val, val_label
+
 def parse_csv(label_path):
     raw_data_fp = open(label_path,'r')
     lines = raw_data_fp.readlines()[1:]

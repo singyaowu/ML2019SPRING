@@ -32,47 +32,46 @@ class MyMobileCNN(nn.Module):
             )
 
         self.conv = nn.Sequential(
-            conv_bn(1, 16, 3, 1),
+            conv_bn(1, 32, 3, 1),
             #nn.Dropout2d(0.05),
-            conv_dw(16, 16, 3, 1),
-            nn.MaxPool2d(kernel_size=2),                 # output shape(16, 22, 22)
+            conv_dw(32, 32, 3, 1),
+            nn.MaxPool2d(kernel_size=2),
             nn.Dropout2d(0.05),
 
-            conv_dw(16, 32, 3, 1),
+            conv_dw(32, 32, 3, 1),
             #nn.Dropout2d(0.1),
             conv_dw(32, 32, 3, 1),
             nn.Dropout2d(0.08),
-            nn.MaxPool2d(kernel_size=2),                 # output shape(32, 10, 10)
+            nn.MaxPool2d(kernel_size=2),
             #nn.Dropout2d(0.05),
 
-            #conv_dw(32, 64, 3, 1),
-            #nn.Dropout2d(0.08),
-            #conv_dw(64, 64, 3, 1),
-            #nn.MaxPool2d(kernel_size=2),                 # output shape(32, 4, 4)
-            #nn.Dropout2d(0.05),
-
-            #conv_dw(256, 512, 3, 1),
-            #nn.Dropout2d(0.05),
-            #conv_dw(512, 512, 3, 1),
-            #nn.MaxPool2d(kernel_size=2),                 # output shape(32, 4, 4)
-            #nn.BatchNorm2d(512),
-            #nn.Dropout2d(0.05),
-
-            conv_dw(32, 32, 3, 1),
-            #nn.Dropout2d(0.05),
             conv_dw(32, 64, 3, 1),
             conv_dw(64, 64, 3, 1),
-            
-            nn.MaxPool2d(kernel_size=2),                 # output shape(32, 4, 4)
+
+            nn.MaxPool2d(kernel_size=2),
             nn.BatchNorm2d(64),
-            nn.Dropout2d(0.5),
+            nn.Dropout2d(0.3),
+
+            conv_dw(64, 64, 3, 1),
+            conv_dw(64, 64, 3, 1),
+
+            nn.MaxPool2d(kernel_size=2),
+            nn.BatchNorm2d(64),
+            nn.Dropout2d(0.3),
+
+            conv_dw(64, 64, 3, 1),
+            conv_dw(64, 64, 3, 1),
+
+            nn.MaxPool2d(kernel_size=2),
+            nn.BatchNorm2d(64),
+            nn.Dropout2d(0.3),
         )
         self.fc = nn.Sequential(
-            #nn.Linear(128 * 3 * 3, 500),
-            #nn.ReLU(),
-            #nn.BatchNorm1d(500),
-            #nn.Dropout(0.5),
-            nn.Linear(64 * 6 * 6, 7),
+            nn.Linear(64 * 1 * 1, 64),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Dropout(0.5),
+            nn.Linear(64, 7),
         )
         #self.out = nn.Softmax(dim=1)
     def forward(self, x):
