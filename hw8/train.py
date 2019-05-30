@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # train
     model = Model.MyMobileCNN()
     teacher_model = Model.MyCNN()
-    teacher_model.load_state_dict(torch.load('model_params.pkl'))
+    teacher_model.load_state_dict(torch.load('model_params0.6896.pkl'))
 
     model.cuda()
     model.train()
