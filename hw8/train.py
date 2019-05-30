@@ -11,7 +11,7 @@ import Model
 from myDataset import TrainDataset
 # parameters
 EPOCH = 100
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 LEARNING_RATE = 0.001
 Validation = True
 
@@ -68,25 +68,25 @@ if __name__ == "__main__":
     training_set = TrainDataset(img_train, img_label)
     val_set = Data.TensorDataset(img_val, val_label)
     train_loader = DataLoader(
-        training_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
+        training_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
     val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
     
     # train
     model = Model.MyMobileCNN()
-    try:
-        model.load_state_dict(torch.load('model_params.pkl'))
-        print('use exist parameters')
-    except:
-        print('new model, no exist parameters')
-        pass
+    teacher_model = Model.MyCNN()
+    teacher_model.load_state_dict(torch.load('model_params.pkl'))
+
     model.cuda()
+    model.train()
+    teacher_model.cuda()
+    teacher_model.eval()
+
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
-    loss_func = nn.CrossEntropyLoss().cuda()
+    loss_func = nn.CrossEntropyLoss()
 
     print('start training...')
-    model.train()
 
-    high_val_acc = 0.67
+    high_val_acc = 0.62
     for epoch in range(EPOCH):
         train_loss, train_acc = [], []
         torch.cuda.empty_cache()
@@ -97,6 +97,7 @@ if __name__ == "__main__":
 
             optimizer.zero_grad()
             output = model(img_cuda)
+            #teacher_output = teacher_model(img_cuda)
             #print(output.size(), target_cuda.size())
             loss = loss_func(output, target_cuda)
             loss.backward()

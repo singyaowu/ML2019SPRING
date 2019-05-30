@@ -18,8 +18,7 @@ class TrainDataset(Dataset):
             tf.RandomRotation(30),            
             tf.RandomResizedCrop(48,scale=(0.8,1)),
             tf.ToTensor(),
-            tf.Normalize(mean=[0.5],std=[0.5]),
-            #tf.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+            #tf.Normalize(mean=[0.5],std=[0.5]),
         ])
     def __len__(self):
         return len(self.img_train)
