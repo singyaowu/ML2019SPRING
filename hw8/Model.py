@@ -13,16 +13,16 @@ from torchvision.transforms import *
 class MyMobileCNN(nn.Module):
     def __init__(self):
         super(MyMobileCNN, self).__init__()
-        def conv_bn(inp, oup, kernel_sz, stride):
+        def conv_bn(inp, oup, stride):
             return nn.Sequential(
-                nn.Conv2d(inp, oup, kernel_sz, stride, 1, bias=False),
+                nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
                 nn.BatchNorm2d(oup),
                 nn.ReLU(inplace=True)
             )
 
-        def conv_dw(inp, oup, kernel_sz, stride):
+        def conv_dw(inp, oup, stride):
             return nn.Sequential(
-                nn.Conv2d(inp, inp, kernel_sz, stride, 1, groups=inp, bias=False),
+                nn.Conv2d(inp, inp, 3, stride, 1, groups=inp, bias=False),
                 nn.BatchNorm2d(inp),
                 nn.ReLU(inplace=True),
     
@@ -32,48 +32,37 @@ class MyMobileCNN(nn.Module):
             )
 
         self.conv = nn.Sequential(
-            conv_bn(1, 32, 3, 1),
-            #nn.Dropout2d(0.05),
-            conv_dw(32, 32, 3, 1),
+            conv_bn(1, 32, 1),
+            nn.Dropout2d(0.1),
+            conv_bn(32, 32, 1),
             nn.MaxPool2d(kernel_size=2),
-            nn.Dropout2d(0.05),
 
-            conv_dw(32, 32, 3, 1),
-            #nn.Dropout2d(0.1),
-            conv_dw(32, 32, 3, 1),
-            nn.Dropout2d(0.08),
+            conv_dw(32, 64, 1),
+            nn.Dropout2d(0.1),
+            conv_dw(64, 64, 1),
             nn.MaxPool2d(kernel_size=2),
-            #nn.Dropout2d(0.05),
+            nn.Dropout2d(0.1),
 
-            conv_dw(32, 64, 3, 1),
-            conv_dw(64, 64, 3, 1),
+            conv_dw(64, 64, 1),
+            conv_dw(64, 64, 1),
 
             nn.MaxPool2d(kernel_size=2),
             nn.BatchNorm2d(64),
-            nn.Dropout2d(0.3),
+            nn.Dropout2d(0.1),
 
-            conv_dw(64, 64, 3, 1),
-            conv_dw(64, 64, 3, 1),
-
+            conv_dw(64, 128, 1),
             nn.MaxPool2d(kernel_size=2),
-            nn.BatchNorm2d(64),
-            nn.Dropout2d(0.3),
+            nn.BatchNorm2d(128),
+            nn.Dropout2d(0.1),
 
-            conv_dw(64, 64, 3, 1),
-            conv_dw(64, 64, 3, 1),
-
-            nn.MaxPool2d(kernel_size=2),
-            nn.BatchNorm2d(64),
-            nn.Dropout2d(0.3),
+            conv_dw(128, 128, 1),
+            nn.AvgPool2d(kernel_size=2),
+            nn.BatchNorm2d(128),
+            nn.Dropout2d(0.1),
         )
         self.fc = nn.Sequential(
-            nn.Linear(64 * 1 * 1, 64),
-            nn.ReLU(),
-            nn.BatchNorm1d(64),
-            nn.Dropout(0.5),
-            nn.Linear(64, 7),
+            nn.Linear(128, 7),
         )
-        #self.out = nn.Softmax(dim=1)
     def forward(self, x):
         x = self.conv(x)
         x = x.view(x.size(0),-1)

@@ -2,7 +2,8 @@ import numpy as np
 import sys
 import torch
 import torch.nn as nn
-from torch.optim import Adam
+import torch.optim as optim
+from torch.optim import Adam, SGD
 import torch.utils.data as Data
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -10,9 +11,9 @@ from torchvision import transforms as tf
 import Model
 from myDataset import TrainDataset
 # parameters
-EPOCH = 100
+EPOCH = 800
 BATCH_SIZE = 128
-LEARNING_RATE = 0.001
+LEARNING_RATE = 1e-3
 Validation = True
 
 def readfile(path):
@@ -46,33 +47,20 @@ def readfile(path):
 
     return img_train, img_label, img_val, val_label
 
-'''def parse_csv(label_path):
-    raw_data_fp = open(label_path,'r')
-    lines = raw_data_fp.readlines()[1:]
-    num_data = len(lines)
-
-    raw_imgs = np.empty(shape=(num_data,1,48*48), dtype=float)
-    raw_y = np.zeros(shape=(num_data),dtype=np.int64)
-    for i, line in enumerate(lines):
-        nums = line.split(',')
-        raw_y[i] = int(nums[0])
-        raw_imgs[i,:,:] = np.array([float(num) for num in nums[1].split(' ')]) /255.0
-    
-    raw_imgs = raw_imgs.reshape((num_data,1,48,48))
-    
-    return raw_imgs, raw_y
-'''
 if __name__ == "__main__":
     img_train, img_label, img_val, val_label = readfile(sys.argv[1])
 
     training_set = TrainDataset(img_train, img_label)
     val_set = Data.TensorDataset(img_val, val_label)
     train_loader = DataLoader(
-        training_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
+        training_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
     val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
     
     # train
     model = Model.MyMobileCNN()
+    try:
+        model.load_state_dict(torch.load('mobile_model_params_tmp.pkl'))
+    except: pass
     teacher_model = Model.MyCNN()
     teacher_model.load_state_dict(torch.load('model_params0.6896.pkl'))
 
@@ -81,8 +69,8 @@ if __name__ == "__main__":
     teacher_model.cuda()
     teacher_model.eval()
 
-    optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
-    loss_func = nn.CrossEntropyLoss()
+    optimizer = Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
+    #nn.CrossEntropyLoss().cuda()#
 
     print('start training...')
 
@@ -97,9 +85,13 @@ if __name__ == "__main__":
 
             optimizer.zero_grad()
             output = model(img_cuda)
-            #teacher_output = teacher_model(img_cuda)
-            #print(output.size(), target_cuda.size())
-            loss = loss_func(output, target_cuda)
+            if epoch < 20:
+                loss_func = nn.MSELoss().cuda()
+                teacher_output = teacher_model(img_cuda)
+                loss = loss_func(output, teacher_output.detach())
+            else:
+                loss_func = nn.CrossEntropyLoss().cuda()
+                loss = loss_func(output, target_cuda)
             loss.backward()
             optimizer.step()
 
@@ -121,18 +113,27 @@ if __name__ == "__main__":
             val_acc /= val_set.__len__()
             if val_acc > high_val_acc:
                 high_val_acc = val_acc
+                model.half()
                 torch.save(model.state_dict(), 'mobile_model_params.pkl')
                 print('saved new parameters')
+            model.float()
             model.train()
         if epoch % 10 == 0:
-            torch.save(model.state_dict(), 'mobile_model_params.pkl')
+            model.half()
+            torch.save(model.state_dict(), 'mobile_model_params_tmp.pkl')
+            model.float()
             print('saved new parameters')
         print("Epoch: {}| Loss: {:.4f}| Acc: {:.4f}| Val Acc: {:.4f}"\
             .format(epoch + 1, np.mean(train_loss), acc, val_acc))
-    
-    model.eval()
+        if epoch > 400 and lr == 1e-3:
+            lr = 1e-4
+            for g in optim.param_groups: g['lr'] = lr
+        elif epoch > 1000 and lr == 1e-4:
+            lr = 1e-5
+            for g in optim.param_groups: g['lr'] = lf
     # save parameters
     # torch.save(model, 'model.pkl') # entire net
+    #model.half()
     torch.save(model.state_dict(), 'mobile_model_params.pkl') # parameters
     
 
