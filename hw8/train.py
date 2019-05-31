@@ -30,9 +30,7 @@ def readfile(path):
             val_label.append(raw_train[i][0])
         else:
             img_train.append(tmp)
-            #img_train.append(np.flip(tmp, axis=2))    # simple example of data augmentation
             img_label.append(raw_train[i][0])
-            #img_label.append(raw_train[i][0])
 
     img_train = np.array(img_train, dtype=float) / 255.0
     img_val = np.array(img_val, dtype=float) / 255.0
@@ -69,7 +67,6 @@ if __name__ == "__main__":
     teacher_model.eval()
 
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
-    #nn.CrossEntropyLoss().cuda()#
 
     print('start training...')
 
@@ -131,8 +128,7 @@ if __name__ == "__main__":
             LEARNING_RATE = 1e-5
             for g in optimizer.param_groups: g['lr'] = LEARNING_RATE
     # save parameters
-    # torch.save(model, 'model.pkl') # entire net
-    #model.half()
+    model.half()
     torch.save(model.state_dict(), 'mobile_model_params.pkl') # parameters
     
 
