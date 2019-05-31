@@ -2,7 +2,6 @@ import numpy as np
 import sys
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.optim import Adam, SGD
 import torch.utils.data as Data
 from torch.utils.data import DataLoader
@@ -13,7 +12,7 @@ from myDataset import TrainDataset
 # parameters
 EPOCH = 800
 BATCH_SIZE = 128
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-3 / 5
 Validation = True
 
 def readfile(path):
@@ -31,9 +30,9 @@ def readfile(path):
             val_label.append(raw_train[i][0])
         else:
             img_train.append(tmp)
-            img_train.append(np.flip(tmp, axis=2))    # simple example of data augmentation
+            #img_train.append(np.flip(tmp, axis=2))    # simple example of data augmentation
             img_label.append(raw_train[i][0])
-            img_label.append(raw_train[i][0])
+            #img_label.append(raw_train[i][0])
 
     img_train = np.array(img_train, dtype=float) / 255.0
     img_val = np.array(img_val, dtype=float) / 255.0
@@ -59,7 +58,7 @@ if __name__ == "__main__":
     # train
     model = Model.MyMobileCNN()
     try:
-        model.load_state_dict(torch.load('mobile_model_params_tmp.pkl'))
+        model.load_state_dict(torch.load('mobile_model_params.pkl'))
     except: pass
     teacher_model = Model.MyCNN()
     teacher_model.load_state_dict(torch.load('model_params0.6896.pkl'))
@@ -74,7 +73,7 @@ if __name__ == "__main__":
 
     print('start training...')
 
-    high_val_acc = 0.62
+    high_val_acc = 0.65
     for epoch in range(EPOCH):
         train_loss, train_acc = [], []
         torch.cuda.empty_cache()
@@ -125,12 +124,12 @@ if __name__ == "__main__":
             print('saved new parameters')
         print("Epoch: {}| Loss: {:.4f}| Acc: {:.4f}| Val Acc: {:.4f}"\
             .format(epoch + 1, np.mean(train_loss), acc, val_acc))
-        if epoch > 400 and lr == 1e-3:
-            lr = 1e-4
-            for g in optim.param_groups: g['lr'] = lr
-        elif epoch > 1000 and lr == 1e-4:
-            lr = 1e-5
-            for g in optim.param_groups: g['lr'] = lf
+        if epoch > 50 and LEARNING_RATE > 1e-4:
+            LEARNING_RATE = 1e-4
+            for g in optimizer.param_groups: g['lr'] = LEARNING_RATE
+        elif epoch > 200 and LEARNING_RATE > 1e-5:
+            LEARNING_RATE = 1e-5
+            for g in optimizer.param_groups: g['lr'] = LEARNING_RATE
     # save parameters
     # torch.save(model, 'model.pkl') # entire net
     #model.half()

@@ -13,9 +13,9 @@ class TrainDataset(Dataset):
 
         self.transform = tf.Compose([
             tf.ToPILImage(),
-            #tf.RandomHorizontalFlip(),
+            tf.RandomHorizontalFlip(),
             tf.RandomAffine(30),
-            tf.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+            #tf.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
             tf.RandomRotation(30),            
             tf.RandomResizedCrop(48,scale=(0.8,1)),
             tf.ToTensor(),
