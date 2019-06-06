@@ -25,9 +25,10 @@ def readfile(path):
 
 if __name__ == "__main__":
     model = Model.MyMobileCNN()
-    model.load_state_dict(torch.load('mobile_model_params.pkl'))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model.load_state_dict(torch.load('mobile_model_params_strong.pkl',map_location=device))
     model.float()
-    model.cuda()
+    model.to(device)
     model.eval()
     # test
     output_file = open(sys.argv[2], 'w')
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     predict_y = None
     for step, img in enumerate(test_loader):
         #print(img)
-        img_cuda = img[0].cuda()
+        img_cuda = img[0].to(device)
         output = model(img_cuda)
         predict = torch.max(output, 1)[1]
         if predict_y is None:

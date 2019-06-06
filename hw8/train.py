@@ -55,16 +55,22 @@ if __name__ == "__main__":
     
     # train
     model = Model.MyMobileCNN()
+    
     try:
         model.load_state_dict(torch.load('mobile_model_params.pkl'))
     except: pass
-    teacher_model = Model.MyCNN()
-    teacher_model.load_state_dict(torch.load('model_params0.6896.pkl'))
-
     model.cuda()
     model.train()
-    teacher_model.cuda()
-    teacher_model.eval()
+
+    use_teacher = False
+    try:
+        teacher_model = Model.MyCNN()
+        teacher_model.load_state_dict(torch.load('model_params0.6896.pkl'))
+        teacher_model.cuda()
+        teacher_model.eval()
+        use_teacher = True
+    except: pass
+
 
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
 
@@ -81,7 +87,7 @@ if __name__ == "__main__":
 
             optimizer.zero_grad()
             output = model(img_cuda)
-            if epoch < 20:
+            if epoch < 20 and use_teacher:
                 loss_func = nn.MSELoss().cuda()
                 teacher_output = teacher_model(img_cuda)
                 loss = loss_func(output, teacher_output.detach())
